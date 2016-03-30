@@ -1,6 +1,5 @@
-unity 5.3.2p3
 
-v 0.1
+＃v 0.1  - unity 5.3.2p3
 框架作法為一個元件拆分成三類分開實作
 
 server client common
