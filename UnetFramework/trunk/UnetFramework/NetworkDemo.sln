@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetworkDemo.CSharp.Plugins", "NetworkDemo.CSharp.Plugins.csproj", "{52B955D8-418C-CD2B-8730-B91F8CEA63B9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetworkDemo.CSharp", "NetworkDemo.CSharp.csproj", "{FC277442-BE4F-8516-EAF3-E0C5B3D3C580}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{52B955D8-418C-CD2B-8730-B91F8CEA63B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52B955D8-418C-CD2B-8730-B91F8CEA63B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52B955D8-418C-CD2B-8730-B91F8CEA63B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52B955D8-418C-CD2B-8730-B91F8CEA63B9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC277442-BE4F-8516-EAF3-E0C5B3D3C580}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC277442-BE4F-8516-EAF3-E0C5B3D3C580}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC277442-BE4F-8516-EAF3-E0C5B3D3C580}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC277442-BE4F-8516-EAF3-E0C5B3D3C580}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
