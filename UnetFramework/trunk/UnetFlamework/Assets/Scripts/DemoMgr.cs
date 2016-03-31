@@ -2,21 +2,20 @@
 using System.Collections;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
+using System.Collections.Generic;
 
 public class DemoMgr : NetworkBehaviour{
 
     static public DemoMgr singleton;
     public GameObject building;
     public GameObject ground;
-    public Transform targetPos;
-
+    public Transform targetPosRed;
+    public Transform targetPosBlue;
+    
     // server sync to client.
     [SyncVar]
-    int gameScroe;
-    
-    [SyncVar]
     int playerOnline = 0;    
-
+   
     void Awake()
     {
         singleton = this;
@@ -52,15 +51,30 @@ public class DemoMgr : NetworkBehaviour{
             }
         }
 
+
+   
+        
+
+
         if (isServer && !isClient)
         {
+            posY -= 38;
             GUI.Button(new Rect(Screen.width / 2 - 100, posY, 200, 33), "SERVER ONLY");
+            posY += 38;
+            GUI.Button(new Rect(Screen.width / 2 - 100, posY, 200, 33), "player count : " + playerOnline);
+            
             return;
         }
 
 
 
+        if (GUI.Button(new Rect(50, 5, 80, 25), "Pid : " + PlayerClient.singleton.GetPid()))
+        {
+        }
 
+        if (GUI.Button(new Rect(150, 5, 80, 25), "Team : " + PlayerClient.singleton.GetTeam()))
+        {
+        }   
        
 
         if (GUI.Button(new Rect(Screen.width / 2 - 100, posY, 200, 33), "make!!") ||
@@ -92,27 +106,10 @@ public class DemoMgr : NetworkBehaviour{
 
 
         Camera.main.transform.position = pos;
-     //   ground.transform.position = pos;
+
     }
 
-    /// <summary>
-    /// client/server, get game score. 
-    /// </summary>
-    /// <returns></returns>
-    public static int GetGameScore()
-    {
-        return singleton.gameScroe;
-    }
 
-    /// <summary>
-    /// server use.
-    /// </summary>
-    /// <returns></returns>
-    public int AddGameScore()
-    {
-        gameScroe += 1;
-        return gameScroe;
-    }
 
 
 

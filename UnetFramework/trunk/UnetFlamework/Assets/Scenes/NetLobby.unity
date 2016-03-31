@@ -206,7 +206,8 @@ MonoBehaviour:
   matchName: default
   matchSize: 4
   building: {fileID: 147890, guid: 70303c4978f800846ba12aee305876dd, type: 2}
-  mob01: {fileID: 127346, guid: 1e77f3175b5be484fabbcd215d5d6597, type: 2}
+  mobRed: {fileID: 127346, guid: 57937fc4f9ddc5e4291a182d4facbf69, type: 2}
+  mobBlue: {fileID: 127346, guid: 9c4c908f0e58dd04a853a2aadb698f89, type: 2}
 --- !u!4 &1790600804
 Transform:
   m_ObjectHideFlags: 0

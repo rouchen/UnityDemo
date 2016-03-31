@@ -10,19 +10,28 @@ public class PlayerClient : NetworkBehaviour
     static public PlayerClient singleton;
     bool login = false;
     // to do :: use player data structure.
-    public int pid = 0;  
+    
+
+    PlayerCommon pCommmon; 
 	// Use this for initialization
 	void Start () {
-        if (isLocalPlayer && isClient)
+        if (isClient && isLocalPlayer)
+        {
             singleton = this;
-        else if (isServer)
+            pCommmon.isClientSingleton = true;
+        }
+        if (isServer && isClient && isLocalPlayer && hasAuthority)
+        {
             singleton = this;
+            pCommmon.isClientSingleton = true;
+        }
+        
 	}
     
     
     void Awake()
     {
-
+        pCommmon = GetComponent<PlayerCommon>();
     }
     
     public override void OnStartLocalPlayer()
@@ -42,33 +51,40 @@ public class PlayerClient : NetworkBehaviour
             return;
 
         if  (!login)
-        { 
-            PlayerServer.singleton.CmdLogin();
-            login = true;
+        {
+            if (pCommmon.GetTeam() == 2)
+            {                
+                DemoMgr.singleton.Set2pComps();                
+                login = true;
+            }
+            
         }
 
 	}
 
-    [ClientRpc]
-    public void RpcLogin(int playerId)
-    {
-   //     if (!isLocalPlayer)
-   //       return;
-    
-        if (pid == 0)
-            pid = playerId;
-
-        if (pid == 2 && isLocalPlayer)
-        {
-            //Camera.main.transform.rotation = Quaternion.Euler(Camera.main.transform.rotation.x, Camera.main.transform.rotation.y, 0);
-            DemoMgr.singleton.Set2pComps();
-
-        }
+    /// <summary>
+    /// broadcast all players.
+    /// </summary>
+    [ClientRpc] 
+    public void RpcDoSomething()
+    {     
+        
     }
 
     [Client]
     public void MakeMob()
     {
         PlayerServer.singleton.CmdMakeMob();   
+    }
+
+    public int GetPid()
+    {
+        return pCommmon.GetId();
+    }
+
+
+    public int GetTeam()
+    {
+        return pCommmon.GetTeam();
     }
 }

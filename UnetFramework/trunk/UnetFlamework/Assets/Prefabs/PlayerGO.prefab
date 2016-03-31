@@ -44,7 +44,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   building: {fileID: 147890, guid: 70303c4978f800846ba12aee305876dd, type: 2}
-  mob01: {fileID: 127346, guid: 1e77f3175b5be484fabbcd215d5d6597, type: 2}
+  mobBlue: {fileID: 127346, guid: 9c4c908f0e58dd04a853a2aadb698f89, type: 2}
+  mobRed: {fileID: 127346, guid: 57937fc4f9ddc5e4291a182d4facbf69, type: 2}
 --- !u!114 &11405476
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -76,6 +77,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2445f477e6e12c84c938a36a4a5b02ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  pid: 0
+  team: 0
+  isClientSingleton: 0
+  isServerSingleton: 0
 --- !u!114 &11426928
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -119,7 +124,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0f477cdb3adc2eb42b711023bd3ee029, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pid: 0
 --- !u!1001 &100100000
 Prefab:
   m_ObjectHideFlags: 1

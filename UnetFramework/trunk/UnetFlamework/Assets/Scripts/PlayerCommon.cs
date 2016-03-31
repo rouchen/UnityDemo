@@ -4,9 +4,17 @@ using UnityEngine.Networking;
 
 public class PlayerCommon : NetworkBehaviour
 {
-    static public PlayerCommon singleton;
+    //static public PlayerCommon singleton;    
 
-    //[SyncVar]
+
+    [SyncVar]
+    public int pid;
+    [SyncVar]
+    public int team = 0;
+    
+    // test info in inspetor.
+    public bool isClientSingleton = false;
+    public bool isServerSingleton = false;
 
 	// Use this for initialization
 	void Start () {
@@ -15,14 +23,33 @@ public class PlayerCommon : NetworkBehaviour
 
     void Awake()
     {
-        singleton = this;
+      //  singleton = this;
     }
-
 
 	// Update is called once per frame
 	void Update () {
         
 	}
 
+    public void SetPlayerId(int id)
+    {
+        pid = id;        
+    }
+
+    public void SetTeam(int tid)
+    {
+        team = tid;
+    }
+
+    public int GetTeam()
+    {
+       return team ;
+    }
+
+    public int GetId()
+    {
+        return pid;
+
+    }
 
 }

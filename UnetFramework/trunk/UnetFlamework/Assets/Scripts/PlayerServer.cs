@@ -9,24 +9,33 @@ public class PlayerServer : NetworkBehaviour
     //[Command]
     //[SyncEvent]
 
-    static public PlayerServer singleton;
-
-    bool readyToGo = false;
+    static public PlayerServer singleton;    
     public GameObject building;
-    public GameObject mob01;        
+    public GameObject mobBlue;
+    public GameObject mobRed;
+    PlayerCommon pCommmon; 
 
 	// Use this for initialization
 	void Start () {
-        if (isServer)
+        if (isClient && isLocalPlayer)
+        {
             singleton = this;
-        else if (isLocalPlayer)
+            pCommmon.isServerSingleton = true;
+        }
+        else if (isServer && isClient && isLocalPlayer && hasAuthority) 
+        {
             singleton = this;
+            pCommmon.isServerSingleton = true;
+        }
 	}
 
     //[Server]
     void Awake()
     {
-
+        pCommmon = GetComponent<PlayerCommon>();
+        DemoMgr.singleton.AddPlayerOnline();
+        pCommmon.SetPlayerId(DemoMgr.GetPlayerOnline());
+        pCommmon.SetTeam(((2 - (DemoMgr.GetPlayerOnline() %2) )) );
     }
 
 	// Server update is called once per frame
@@ -52,29 +61,32 @@ public class PlayerServer : NetworkBehaviour
     [Command]
     public void CmdMakeMob()
     {
-        Vector3 pos = Vector3.zero;
-        pos.x = -20f;
-        pos.y = 0f;
-        pos.z = 3f;
-        GameObject b = (GameObject)GameObject.Instantiate(mob01, pos, Quaternion.identity);
-        NavMeshAgent nma = b.GetComponent<NavMeshAgent>();
-        nma.destination = DemoMgr.singleton.targetPos.position;
-        GameObject.Destroy(b, 10.0f);
-        NetworkServer.Spawn(b);
+        Vector3 StartPos = Vector3.zero;
+        Vector3 EndPos = Vector3.zero;
+        GameObject colorGo = mobBlue;
+        if (pCommmon.GetTeam() == 1)
+        {
+            StartPos = DemoMgr.singleton.targetPosBlue.position;
+            EndPos = DemoMgr.singleton.targetPosRed.position;
+            colorGo = mobBlue;
+        }
+        
+        else if (pCommmon.GetTeam() == 2) 
+        {
+            StartPos = DemoMgr.singleton.targetPosRed.position;
+            EndPos = DemoMgr.singleton.targetPosBlue.position;
+            colorGo = mobRed;
+        }
+
+        GameObject mobGo = (GameObject)GameObject.Instantiate(colorGo, StartPos, Quaternion.identity);
+        
+        NavMeshAgent nma = mobGo.GetComponent<NavMeshAgent>();
+        nma.destination = EndPos;
+        GameObject.Destroy(mobGo, 10.0f);
+        NetworkServer.Spawn(mobGo);
+
 
     }
 
-
-    [Command]
-    public void CmdLogin()
-    {
-        DemoMgr.singleton.AddPlayerOnline();
-        PlayerClient.singleton.RpcLogin(DemoMgr.GetPlayerOnline());  // set player id.
-    }
-
-    public void SetPid()
-    {
-       //emoMgr.singleton.AddPlayerOnline();
-    }
 
 }
