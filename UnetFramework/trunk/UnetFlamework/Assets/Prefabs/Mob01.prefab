@@ -14,6 +14,9 @@ GameObject:
   - 195: {fileID: 19569188}
   - 114: {fileID: 11459164}
   - 114: {fileID: 11415816}
+  - 114: {fileID: 11474090}
+  - 114: {fileID: 11473746}
+  - 114: {fileID: 11406310}
   m_Layer: 0
   m_Name: Mob01
   m_TagString: Untagged
@@ -66,6 +69,17 @@ MeshFilter:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 127346}
   m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &11406310
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 127346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6558c050f19ab249b87a6232f7e3760, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &11415816
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -118,6 +132,30 @@ MonoBehaviour:
     i15: 151
   m_ServerOnly: 0
   m_LocalPlayerAuthority: 0
+--- !u!114 &11473746
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 127346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce628fb5f3b5fbe4cb5b3f20569c1878, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &11474090
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 127346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9db1b30c8177c1443b0c1142db64880f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hp: 0
+  team: 0
 --- !u!136 &13674922
 CapsuleCollider:
   m_ObjectHideFlags: 1
@@ -145,7 +183,7 @@ NavMeshAgent:
   m_AngularSpeed: 120
   m_StoppingDistance: 0
   m_AutoTraverseOffMeshLink: 1
-  m_AutoBraking: 1
+  m_AutoBraking: 0
   m_AutoRepath: 1
   m_Height: 2
   m_BaseOffset: 1

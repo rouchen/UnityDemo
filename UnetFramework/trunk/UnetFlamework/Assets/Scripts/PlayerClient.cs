@@ -14,7 +14,8 @@ public class PlayerClient : NetworkBehaviour
 
     PlayerCommon pCommmon; 
 	// Use this for initialization
-	void Start () {
+	void Start () 
+    {
         if (isClient && isLocalPlayer)
         {
             singleton = this;

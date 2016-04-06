@@ -16,7 +16,8 @@ public class PlayerServer : NetworkBehaviour
     PlayerCommon pCommmon; 
 
 	// Use this for initialization
-	void Start () {
+	void Start () 
+    {
         if (isClient && isLocalPlayer)
         {
             singleton = this;
@@ -83,6 +84,7 @@ public class PlayerServer : NetworkBehaviour
         NavMeshAgent nma = mobGo.GetComponent<NavMeshAgent>();
         nma.destination = EndPos;
         GameObject.Destroy(mobGo, 10.0f);
+        mobGo.GetComponent<MobServer>().InitData(pCommmon.GetTeam());
         NetworkServer.Spawn(mobGo);
 
 
