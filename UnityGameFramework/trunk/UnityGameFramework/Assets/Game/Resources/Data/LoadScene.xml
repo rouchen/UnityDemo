@@ -1,0 +1,21 @@
+<Scenes>
+	<!-- Coinpage -->
+	<Scene Name="Coinpage" Path="Game/Stage/">
+		<childScene Name = "CoinpageUI" Path="Game/Stage/Localization/Coinpage/"/>
+	</Scene>
+	
+	<!-- Fight -->
+	<Scene Name="Fight" Path="Game/Stage/">
+		<childScene Name = "FightUI" Path="Game/Stage/Localization/Fight/"/>
+	</Scene>
+
+	<!-- SelectSuit -->
+	<Scene Name="SelectSuit" Path="Game/Stage/">
+		<childScene Name = "SelectSuitUI" Path="Game/Stage/Localization/SelectSuit/"/> 
+	</Scene>
+  
+	<!-- CalculateScore -->
+	<Scene Name="CalculateScore" Path="Game/Stage/">
+		<childScene Name = "CalculateScoreUI" Path="Game/Stage/Localization/CalculateScore/"/> 
+	</Scene>
+</Scenes>
