@@ -4,7 +4,9 @@ using System.Collections;
 public class InfoMgr : MonoBehaviour 
 {
     static InfoMgr instance;
-    public InfoMgr Singleton
+
+    //! Singleton.
+    public static InfoMgr Singleton
     {
         get 
         {
@@ -20,5 +22,17 @@ public class InfoMgr : MonoBehaviour
 
     public PlayerInfo playerInfo = new PlayerInfo();
     public GameInfo gameInfo = new GameInfo();
-	
+    public DesignDataInfo designDataInfo = new DesignDataInfo();
+
+    //===========================================
+
+    /// <summary>
+    /// 每個Credit要重置的資料.
+    /// </summary>
+    public void ResetEveryCredit()
+    {
+        playerInfo.ResetEveryCredit();
+        gameInfo.ResetEveryCredit();
+    }
+
 }

@@ -35,7 +35,7 @@ public class ProcMgr
     /// <returns></returns>
     public bool Add(string name, ProcBase proc)
     {
-        if (! procDic.ContainsKey(name))
+        if (!procDic.ContainsKey(name))
         {
             procDic.Add(name, proc);
             proc.Initialize();
@@ -91,7 +91,7 @@ public class ProcMgr
             {
                 isChangeProc = true;
             }
-            
+
             return true;
         }
 
@@ -118,7 +118,7 @@ public class ProcMgr
             return;
         }
 
-         if (isEnterProc)
+        if (isEnterProc)
         {
             currProc.ProcStart();
             isEnterProc = false;
@@ -128,14 +128,14 @@ public class ProcMgr
         currProc.ProcUpdate();
 
         //換 Proc.
-        if(isChangeProc)
+        if (isChangeProc)
         {
             currProc.ProcEnd();
             SetCurrProc(nextProcName);
             isEnterProc = true;
             isChangeProc = false;
         }
-       
+
     }
 
     /// <summary>
@@ -174,5 +174,17 @@ public class ProcMgr
             proc.Value.Release();
         }
         procDic.Clear();
+    }
+
+    /// <summary>
+    /// 通用的建立子流程.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="mono"></param>
+    public void CreateAddPorc<T>(MonoBehaviour mono) where T : ProcBase
+    {
+        string tmpstr = typeof(T).ToString();
+        ProcBase newporc = (T)Activator.CreateInstance(typeof(T), mono, tmpstr);
+        Add(tmpstr, newporc);
     }
 }

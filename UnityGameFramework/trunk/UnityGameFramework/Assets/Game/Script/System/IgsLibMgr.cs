@@ -4,7 +4,7 @@ using System.Collections;
 public class IgsLibMgr : MonoBehaviour 
 {
     static IgsLibMgr instance;
-    public IgsLibMgr Singleton
+    public static IgsLibMgr Singleton
     {
         get
         {
