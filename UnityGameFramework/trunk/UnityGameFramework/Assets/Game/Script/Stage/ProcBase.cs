@@ -59,7 +59,7 @@ public class ProcBase
     }
 
     /// <summary>
-    /// 
+    /// 換場景時，也會執行，所以不能在ProcEnd函式中作換場景的操作，不然場景會load兩次。
     /// </summary>
     public virtual void ProcEnd()
     {

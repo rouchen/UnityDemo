@@ -169,6 +169,10 @@ public class ProcMgr
     /// </summary>
     public void Destroy()
     {
+        //! 在離開場景時需把當下流程的procEnd()跑一次，
+        //! 確保換場景時，當下流程資源都有被釋放.
+        currProc.ProcEnd();
+
         foreach (KeyValuePair<string, ProcBase> proc in procDic)
         {
             proc.Value.Release();
