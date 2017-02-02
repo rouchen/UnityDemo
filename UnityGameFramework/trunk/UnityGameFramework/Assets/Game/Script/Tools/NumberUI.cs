@@ -85,7 +85,11 @@ public class NumberUI : MonoBehaviour
             else
             {
                 numberImageList[i].gameObject.SetActive(true);
-                numberImageList[i].sprite = numberSpriteList[r];
+                //! 加防呆.
+                if (r < numberSpriteList.Count)
+                {
+                    numberImageList[i].sprite = numberSpriteList[r];
+                }
 
                 if (isPlayAnimation && (!isPlayOnNumberChange || r != currImageNumber[i]))
                 {

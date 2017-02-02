@@ -29,12 +29,16 @@ public class Memory : MonoBehaviour
         if (timeleft >= updateInterval)
         {
             stringBuilder.Length = 0;
-            stringBuilder.AppendFormat("MEM:{0:F2} KB\n", ((int)((float)Profiler.GetTotalAllocatedMemory() / 1024.0f)).ToString());
+            stringBuilder.AppendFormat("Total:{0:F2} MB\n", ((int)((float)Profiler.GetTotalAllocatedMemory() / 1024.0f / 1024.0f)).ToString());
+            stringBuilder.AppendFormat("MonoHeap:{0:F2} MB\n", ((int)((float)Profiler.GetMonoHeapSize() / 1024.0f / 1024.0f)).ToString());
+            stringBuilder.AppendFormat("MonoUsed:{0:F2} MB\n", ((int)((float)Profiler.GetMonoUsedSize() / 1024.0f / 1024.0f)).ToString());
+
             //string format = System.String.Format("MEM:{0:F2} MB", ((int)((float)Profiler.GetTotalAllocatedMemory()/1024.0f/1024.0f)).ToString());
             //memTxt.text = format;
-            stringBuilder.AppendFormat("GCT:{0:F2} KB", ((int)((float)GC.GetTotalMemory(true) / 1024.0f)).ToString());
+            //stringBuilder.AppendFormat("MEM:{0:F2} KB\n", ((int)((float)Profiler.GetTotalReservedMemory() / 1024.0f)).ToString());
 
-                   
+            //! 會造成GC.Collect導致frameRate不穩定.
+            //stringBuilder.AppendFormat("GCT:{0:F2} MB", ((int)((float)GC.GetTotalMemory(true) / 1024.0f / 1024.0f)).ToString());
 
             memTxt.text = stringBuilder.ToString();
 

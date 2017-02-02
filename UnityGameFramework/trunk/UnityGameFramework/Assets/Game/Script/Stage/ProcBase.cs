@@ -3,14 +3,12 @@ using System;
 
 [Serializable]
 public class ProcBase 
-{
-    MonoBehaviour monoBehavior;
+{   
     public string name = "";
 
     public ProcBase(MonoBehaviour mono, string procName)
     {
         name = procName;
-        monoBehavior = mono;
     }
 
     /// <summary>
@@ -59,7 +57,8 @@ public class ProcBase
     }
 
     /// <summary>
-    /// 換場景時，也會執行，所以不能在ProcEnd函式中作換場景的操作，不然場景會load兩次。
+    /// 換場景時，OnDestroy也會執行，所以不能在ProcEnd函式中作換場景的操作，不然場景會load兩次。
+    /// 在該流程如有換場景行為時, 呼叫其他GameObject有可能會null, 需自行檢查.
     /// </summary>
     public virtual void ProcEnd()
     {

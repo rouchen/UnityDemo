@@ -19,8 +19,14 @@ public class ProcMgr
     bool isChangeProc = false;
 
     public ProcBase currProc = null;
+
+#if (!RELEASE)
+    //! 是否流程暫停(測試模式).
+    static bool isPauseProc = false;
+#endif // (!RELEASE).
+
     /// <summary>
-    /// 
+    /// 建構子.
     /// </summary>
     public ProcMgr()
     {
@@ -59,7 +65,7 @@ public class ProcMgr
             currProc = procDic[name];
             //還是得做一次EnterProc.
             isEnterProc = true;
-
+            
             return true;
         }
 
@@ -112,6 +118,18 @@ public class ProcMgr
     /// </summary>
     public void Update()
     {
+#if (!RELEASE)
+        //! 流程暫停功能.
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            isPauseProc = !isPauseProc;
+        }
+
+        if (isPauseProc)
+        {
+            return;
+        }
+#endif // (!RELEASE).
 
         if (currProc == null)
         {
@@ -122,6 +140,8 @@ public class ProcMgr
         {
             currProc.ProcStart();
             isEnterProc = false;
+            //! 記憶體快照.
+            MemorySnapshot.WriteMemoryProfile(FileDirectory.GetReWritePath(), currProcName);
         }
 
         currProc.ProcInput();
@@ -143,12 +163,12 @@ public class ProcMgr
     /// </summary>
     public void LateUpdate()
     {
-        if (!procDic.ContainsKey(currProcName))
+        if (currProc == null)
         {
             return;
         }
 
-        procDic[currProcName].ProcLateUpdate();
+        currProc.ProcLateUpdate();      
     }
 
     /// <summary>
@@ -156,12 +176,12 @@ public class ProcMgr
     /// </summary>
     public void FixUpdate()
     {
-        if (!procDic.ContainsKey(currProcName))
+        if (currProc == null)
         {
             return;
         }
 
-        procDic[currProcName].ProcFixUpdate();
+        currProc.ProcFixUpdate();
     }
 
     /// <summary>
@@ -171,7 +191,10 @@ public class ProcMgr
     {
         //! 在離開場景時需把當下流程的procEnd()跑一次，
         //! 確保換場景時，當下流程資源都有被釋放.
-        currProc.ProcEnd();
+        if (currProc != null)
+        {
+            currProc.ProcEnd();
+        }
 
         foreach (KeyValuePair<string, ProcBase> proc in procDic)
         {
