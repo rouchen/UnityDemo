@@ -21,7 +21,8 @@ public class SoundMgr : MonoBehaviour
     Dictionary<string, AudioSource> bgmAudios = new Dictionary<string, AudioSource>();
     int maxBGMAudio = 5;
 
-
+    //! 場景中第一個soundSceneResource.
+    SoundSceneResource firstSoundSceneResourceInCurrentScene;  
 
     bool soundMute = false;
     bool systemLoad = false;
@@ -402,8 +403,20 @@ public class SoundMgr : MonoBehaviour
     /// regist by SoundSceneResource.
     /// </summary>
     /// <param name="soundAudioInfos"></param>
-    public void RegisterAudioSource(List<soundAudioInfo> soundAudioInfos)
+    public void RegisterAudioSource(List<soundAudioInfo> soundAudioInfos, SoundSceneResource soundSceneResource)
     {
+        //! 若這個場景已註冊過SoundSceneResource，就直接加入AudioSource就好.
+        if (firstSoundSceneResourceInCurrentScene != null)
+        {
+            AddRegisterAudioSource(soundAudioInfos);
+            return;
+        }
+        else
+        {
+            //! 記住場景中第一個soundSceneResource.
+            firstSoundSceneResourceInCurrentScene = soundSceneResource;
+        }
+
         //! 關閉上個流程音效
         for (int i = 0; i < soundAudios.Count; i++)
         {
@@ -411,7 +424,10 @@ public class SoundMgr : MonoBehaviour
             {
                 soundAudios[i].Stop();
             }
+
+            Destroy(soundAudios[i]);
         }
+        soundAudios.Clear();
 
         audioDic.Clear();
 
@@ -445,7 +461,7 @@ public class SoundMgr : MonoBehaviour
     /// other Scene list audio regist
     /// </summary>
     /// <param name="soundAudioInfos"></param>
-    public void RegisterAudioSourceByRootScene(List<soundAudioInfo> soundAudioInfos)
+    public void AddRegisterAudioSource(List<soundAudioInfo> soundAudioInfos)
     {
         int soundCount = soundAudioInfos.Count;
         if(soundCount > 30)
@@ -515,6 +531,12 @@ public class SoundMgr : MonoBehaviour
             return;
         }
 
+        //! InitAudioMixer只做一次，場景中第一個soundSceneResource才要做.
+        if (firstSoundSceneResourceInCurrentScene != null)
+        {
+            return;
+        }
+        
         AudioMixerGroup[] amgs = gameAudioMixer.FindMatchingGroups("Master");
         for (int i = 0; i < amgs.Length; i++)
         {
@@ -618,7 +640,7 @@ public class SoundMgr : MonoBehaviour
                     break;
                 }
             }
-            DestroyObject(kvp.Value);
+            Destroy(kvp.Value);
         }
 
         bgmAudios.Clear();
@@ -662,10 +684,26 @@ public class SoundMgr : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("cant find Bgm audio by name => " + name + " Return False");
+            //Debug.LogWarning("cant find Bgm audio by name => " + name + " Return False");
             return false;
         }
     }
+
+    /// <summary>
+    /// Bgm是否存在.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    public bool IsBgmExist(string name)
+    {
+        if (bgmAudios.ContainsKey(name))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     /// <summary>
     /// Set Bgm Volume 
     /// </summary>
@@ -726,7 +764,7 @@ public class SoundMgr : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("cant find normal audio by name => " + name + " Return False");
+            //Debug.LogWarning("cant find normal audio by name => " + name + " Return False");
             return false;
         }
     }
@@ -738,7 +776,7 @@ public class SoundMgr : MonoBehaviour
         foreach (KeyValuePair<string, AudioSource> kvp in bgmAudios)
         {
             StopBGM(kvp.Key);
-            DestroyObject(kvp.Value);
+            Destroy(kvp.Value);
         }
         for(int i = 0; i< soundAudios.Count; i++)
         {
@@ -746,7 +784,8 @@ public class SoundMgr : MonoBehaviour
             {
                 soundAudios[i].Stop();
             }
-            soundAudios[i].clip = null;
+
+            Destroy(soundAudios[i]);
         }
         //!刪除AudioSouce
         soundAudios.Clear();
@@ -758,6 +797,37 @@ public class SoundMgr : MonoBehaviour
         //! 淡入淡出 清空
         fadeInOut.Clear();
     }
+
+    /// <summary>
+    /// 刪除Sound AudioSource.
+    /// </summary>
+    public void ClearSound()
+    {
+        for (int i = 0; i < soundAudios.Count; i++)
+        {
+            if (soundAudios[i].isPlaying)
+            {
+                soundAudios[i].Stop();
+            }
+
+            Destroy(soundAudios[i]);
+        }
+        //!刪除AudioSouce
+        soundAudios.Clear();
+    }
+
+    /// <summary>
+    /// 移除SoundAudioInfo參考.
+    /// </summary>
+    /// <param name="name"></param>
+    public void RemoveAudioInfoByName(string name)
+    {
+        if (audioDic.ContainsKey(name))
+        {
+            audioDic.Remove(name);
+        }
+    }
+
     /// <summary>
     /// 聲音淡出
     /// </summary>
@@ -969,5 +1039,12 @@ public class SoundMgr : MonoBehaviour
         //soundAudioInfos.Clear();
     }
 
+    /// <summary>
+    /// 反註冊soundSceneResource.
+    /// </summary>
+    public void UnRegisterSoundSceneResource()
+    {
+        firstSoundSceneResourceInCurrentScene = null;
+    }
 }
 

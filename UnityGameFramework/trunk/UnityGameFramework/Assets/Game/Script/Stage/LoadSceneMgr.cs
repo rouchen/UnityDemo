@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 public class ScenePathData
 {
     public string name;
-    public string path;
+    public string idType;
 }
 
 //! 場景資料.
@@ -18,20 +18,42 @@ public class LoadSceneData
     public List<ScenePathData> childSceneList;
 }
 
+//! 要Load的場景名稱.
+public class LoadSceneRealData
+{
+    //! 主場景.
+    public string parentSceneName;
+    //! 子場景.
+    public List<string> childSceneNameList = new List<string>();
+    //! 非同步載入.
+    public bool async;
+    //! 非同步載入，是否載入完自動開啟.
+    public bool asyncSceneAutoActive;
+    //! 是否已在Loading.
+    public bool isLoading;
+}
+
 public class LoadSceneMgr : MonoBehaviour
 {
     //! 場景List.
     List<LoadSceneData> loadSceneDataList = new List<LoadSceneData>();
 
+    //! 要Load的場景的實際資料.
+    List<LoadSceneRealData> loadSceneRealDataList = new List<LoadSceneRealData>();
+
+    //LoadSceneRealData loadSceneRealData;
+
     //! 異步載入的 op 清單.
     List<AsyncOperation> asyncOP = new List<AsyncOperation>();
-
     //! 異步載入後要被清除的 scene.
     List<Scene> toBeUnloadScene = new List<Scene>();
+
     bool isStartAsyncAutoActive = false;
     float asyncAutoActiveTime = 0;
     float currentTime = 0;
-    
+    //! 是否初始化.
+    bool isInitialize;
+
     //! Singleton.
     static LoadSceneMgr instance = null;
     public static LoadSceneMgr Singleton
@@ -43,29 +65,46 @@ public class LoadSceneMgr : MonoBehaviour
                 GameObject go = new GameObject("LoadSceneMgr");
                 instance = go.AddComponent<LoadSceneMgr>();
                 DontDestroyOnLoad(go);
-                instance.LoadScenesFile("Data/LoadScene");
             }
             return instance;
         }
     }
 
+    //===================================
+
+    /// <summary>
+    /// 初始化.
+    /// </summary>
+    void Initialize()
+    {
+        if (isInitialize)
+        {
+            return;
+        }
+        LoadScenesFile();
+
+        isInitialize = true;
+    }
+
     /// <summary>
     /// 載入場景檔案.
     /// </summary>
-    /// <param name="path">路徑</param>
-    void LoadScenesFile(string path)
+    void LoadScenesFile()
     {
-        Object resObject = Resources.Load(path);
+        string assetbundelName = "LoadScene";
+        string assetName = "LoadScene.xml";
+
+        LoadAssetBundleMgr.Singleton.SetDownloadDirectory(FileDirectory.GetDataResourceAssetbundlePath());
+        LoadAssetBundleMgr.Singleton.LoadAssetbundle(assetbundelName, assetName);
         
+        TextAsset resObject = LoadAssetBundleMgr.Singleton.GetAsset(assetbundelName, assetName) as TextAsset;
         XmlDocument xmlDoc = new XmlDocument();
-        xmlDoc.LoadXml(resObject.ToString());
-
+        xmlDoc.LoadXml(resObject.text);
         ParseScenesData(xmlDoc.FirstChild);
-
         xmlDoc = null;
         resObject = null;
-        Resources.UnloadUnusedAssets();
-        System.GC.Collect();
+
+        LoadAssetBundleMgr.Singleton.UnloadAssetbundleImmediately(assetbundelName, true);
     }
 
     /// <summary>
@@ -89,7 +128,7 @@ public class LoadSceneMgr : MonoBehaviour
             //! Parent.
             loadSceneData.parentScene = new ScenePathData();
             loadSceneData.parentScene.name = parentNode.ChildNodes[i].Attributes["Name"].InnerText;
-            loadSceneData.parentScene.path = parentNode.ChildNodes[i].Attributes["Path"].InnerText;
+            loadSceneData.parentScene.idType = parentNode.ChildNodes[i].Attributes["IdType"].InnerText;
 
             //! Child List.
             loadSceneData.childSceneList = new List<ScenePathData>();
@@ -116,7 +155,8 @@ public class LoadSceneMgr : MonoBehaviour
 
             ScenePathData scenePathData = new ScenePathData();
             scenePathData.name = parentNode.ChildNodes[i].Attributes["Name"].InnerText;
-            scenePathData.path = parentNode.ChildNodes[i].Attributes["Path"].InnerText;
+            scenePathData.idType = parentNode.ChildNodes[i].Attributes["IdType"].InnerText;
+
             sceneDataList.Add(scenePathData);
         }
     }
@@ -129,41 +169,129 @@ public class LoadSceneMgr : MonoBehaviour
     /// <param name="asyncSceneAutoActive">非同步時, 是否自動 Active Scene, 否則手動檢查 IsLoadSceneAsyncApproximatelyDone() 再呼叫 LoadSceneAsyncStartAutoActive() </param>
     public void LoadScene(string sceneName, bool async, bool asyncSceneAutoActive = true)
     {
-        LoadSceneData sceneData = FindSceneData(sceneName);
-        string parentSceneFullName = sceneData.parentScene.path + sceneData.parentScene.name;
+        Initialize();
 
-        //LoadSceneData emptySceneData = FindSceneData("Empty");
-        //string emptySceneFullName = emptySceneData.parentScene.path + emptySceneData.parentScene.name;
+        //! 取得要Load場景的全部真實名稱.
+        LoadSceneRealData sceneRealData = GetLoadSceneRealData(sceneName, async, asyncSceneAutoActive);
 
+        //! 不使用下面code
 
-        if (async)
+        ////! 同步載入則count++
+        ////! 非同步前，則先檢查是否已有同步的載入
+        ////! bug出現在，同個frame先同步再非同步載入，會發生兩個場景都是呈現同步載入狀態，同時出現兩個場景，可能是unity的SceneManager不允許同時使用同步和非同步。
+        //if (sceneRealData.async)
+        //{
+        //    if (count != 0)
+        //    {
+        //        sceneRealData = null;
+        //        return;
+        //    }
+        //}
+        //else
+        //{
+        //    count++;
+        //}
+        loadSceneRealDataList.Add(sceneRealData);
+
+#if ASSETBUNDLE
+        DownloadAssetBundle(sceneRealData, async);
+        //! 同步載入，直接開始Load.
+        if(!async)
         {
-            //清空.
+            LoadSceneInternal(sceneRealData);
+        }
+#else //! ASSETBUNDLE.
+        LoadSceneInternal(sceneRealData);
+#endif //! ASSETBUNDLE.
+
+    }
+
+    /// <summary>
+    /// 下載 AssetBundle.
+    /// </summary>
+    /// <param name="sceneRealData"></param>
+    /// <param name="isAsync">是否非同步</param>
+    void DownloadAssetBundle(LoadSceneRealData sceneRealData, bool isAsync)
+    {
+        //! 設定AssetBundle下載路徑.
+        LoadAssetBundleMgr.Singleton.SetDownloadDirectory(FileDirectory.GetStageAssetBundlePath());
+
+        if (isAsync)
+        {
+            //! 下載AssetBundle.
+            LoadAssetBundleMgr.Singleton.LoadAssetbundleAsync(sceneRealData.parentSceneName);
+
+            for (int i = 0; i < sceneRealData.childSceneNameList.Count; i++)
+            {
+                LoadAssetBundleMgr.Singleton.LoadAssetbundleAsync(sceneRealData.childSceneNameList[i]);
+            }
+        }
+        else
+        {
+            //! 下載AssetBundle.
+            LoadAssetBundleMgr.Singleton.LoadAssetbundle(sceneRealData.parentSceneName);
+
+            for (int i = 0; i < sceneRealData.childSceneNameList.Count; i++)
+            {
+                LoadAssetBundleMgr.Singleton.LoadAssetbundle(sceneRealData.childSceneNameList[i]);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 載入場景(使用AssetBundle).
+    /// </summary>
+    /// <param name="sceneRealData"></param>
+    void LoadSceneFromAssetBundleAsync(LoadSceneRealData sceneRealData)
+    {
+        //! 未載入場景或已載入中，不做處理.
+        if (sceneRealData == null || sceneRealData.isLoading)
+        {
+            return;
+        }
+
+        //! 檢查是否下載完成.
+        //! 檢查主場景.
+        if (!LoadAssetBundleMgr.Singleton.IsAssetbundleLoaded(sceneRealData.parentSceneName))
+        {
+            return;
+        }
+
+        //! 檢查子場景.
+        for (int i = 0; i < sceneRealData.childSceneNameList.Count; i++)
+        {
+            if (!LoadAssetBundleMgr.Singleton.IsAssetbundleLoaded(sceneRealData.childSceneNameList[i]))
+            {
+                return;
+            }
+        }
+
+        //! 全部AssetBundle下載完成.
+        //! 開始載入場景.
+        LoadSceneInternal(sceneRealData);
+        sceneRealData.isLoading = true;
+    }
+    /// <summary>
+    /// 實際Load Scene.
+    /// </summary>
+    /// <param name="sceneRealData"></param>
+    void LoadSceneInternal(LoadSceneRealData sceneRealData)
+    {
+        if (sceneRealData.async)
+        {
             asyncOP.Clear();
             toBeUnloadScene.Clear();
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
                 toBeUnloadScene.Add(SceneManager.GetSceneAt(i));
             }
-
-            //! Parent Scene.
-
-            //SceneManager.LoadSceneAsync(parentSceneFullName);
-            //先載一個空埸景(清空之前的), 再把其它的 async load 進來. 
-            //SceneManager.LoadSceneAsync(emptySceneFullName);
-            // single 會 block 其它的 additive.
-            //StartCoroutine(LoadSceneAsync(emptySceneFullName, LoadSceneMode.Single));
-
-
-            //! Child Scene.
-
-            LoadChildScene(sceneData.childSceneList, async, false);
+            LoadChildScene(sceneRealData, false);
 
 
             //parent scene 最後 load 才抓得到 child scene 的東西.
-            StartCoroutine(LoadSceneAsync(parentSceneFullName, LoadSceneMode.Additive));
+            StartCoroutine(LoadSceneAsync(sceneRealData.parentSceneName, LoadSceneMode.Additive));
 
-            if (asyncSceneAutoActive)
+            if (sceneRealData.asyncSceneAutoActive)
             {
                 LoadSceneAsyncStartAutoActive(0);
             }
@@ -171,29 +299,116 @@ public class LoadSceneMgr : MonoBehaviour
         else
         {
             //! Parent Scene.
-            SceneManager.LoadScene(parentSceneFullName);
+            SceneManager.LoadScene(sceneRealData.parentSceneName);
             //! Child Scene.
-            LoadChildScene(sceneData.childSceneList, async, false);
-        }
+            LoadChildScene(sceneRealData, false);
 
+#if ASSETBUNDLE
+            UnloadSceneAssetbundle(false, false);
+#endif //! ASSETBUNDLE.
+        }
     }
 
     /// <summary>
-    /// Load Child Scene.
+    /// Unload場景的Aseetbundle.
     /// </summary>
-    /// <param name="childSceneList"></param>
-    /// <param name="async">非同步</param>
-    /// <param name="checkLoad">檢查是否load過</param>
-    void LoadChildScene(List<ScenePathData> childSceneList, bool async, bool checkLoad)
+    /// <param name="unloadAll">Assetbundle unload 參數(連建出來的物件都刪掉)</param>
+    /// <param name="forceUnload">就算被reference多次也強制刪除</param>
+    void UnloadSceneAssetbundle(bool unloadAll = false, bool forceUnload = false)
     {
+        //! 釋放場景的assetbundle.
+        while (loadSceneRealDataList.Count > 0)
+        {
+            LoadSceneRealData sceneRealData = loadSceneRealDataList[0];
+
+            //! 釋放場景AssetBundle.
+            LoadAssetBundleMgr.Singleton.UnloadAssetbundle(sceneRealData.parentSceneName, unloadAll, forceUnload);
+
+            for (int j = 0; j < sceneRealData.childSceneNameList.Count; j++)
+            {
+                LoadAssetBundleMgr.Singleton.UnloadAssetbundle(sceneRealData.childSceneNameList[j], unloadAll, forceUnload);
+            }
+
+            loadSceneRealDataList.RemoveAt(0);
+        }
+
+        Debug.LogWarning("loadSceneRealDataList Count: " + loadSceneRealDataList.Count.ToString());
+    }
+
+    /// <summary>
+    /// 取得要Load場景的全部實際資料.
+    /// </summary>
+    /// <param name="sceneName"></param>
+    /// <param name="async"></param>
+    /// <param name="asyncSceneAutoActive"></param>
+    /// <returns></returns>
+    LoadSceneRealData GetLoadSceneRealData(string sceneName, bool async, bool asyncSceneAutoActive)
+    {
+        LoadSceneRealData sceneRealData = new LoadSceneRealData();
+        sceneRealData.async = async;
+        sceneRealData.asyncSceneAutoActive = asyncSceneAutoActive;
+
+        LoadSceneData sceneData = FindSceneData(sceneName);
+
+        //! 取得Parent SceneName.
+        string parentName = sceneData.parentScene.name;
+        //! 如果有idType，就取得遊戲中對應id.
+        if (sceneData.parentScene.idType != "")
+        {
+            int id = GetIdByIdType(sceneData.parentScene.idType);
+            parentName += id.ToString();
+        }
+        sceneRealData.parentSceneName = parentName;
+
+        //! 取得Child SceneName.
+        for (int i = 0; i < sceneData.childSceneList.Count; i++)
+        {
+            ScenePathData childPathData = sceneData.childSceneList[i];
+
+            string childName = childPathData.name;
+            //! 如果有idType，就取得遊戲中對應id.
+            if (childPathData.idType != "")
+            {
+                int id = GetIdByIdType(childPathData.idType);
+                childName += id.ToString();
+            }
+            sceneRealData.childSceneNameList.Add(childName);
+        }
+
+        return sceneRealData;
+    }
+
+    /// <summary>
+    /// 檢查場景是否已在Loading列表中.
+    /// </summary>
+    /// <param name="sceneName"></param>
+    /// <returns></returns>
+    bool IsLoadSceneRealDataExist(string sceneName)
+    {
+        for (int i = 0; i < loadSceneRealDataList.Count; i++)
+        {
+            if (loadSceneRealDataList[i].parentSceneName == sceneName)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Load子場景.
+    /// </summary>
+    /// <param name="sceneRealData"></param>
+    /// <param name="checkLoad"></param>
+    void LoadChildScene(LoadSceneRealData sceneRealData, bool checkLoad)
+    {
+        List<string> childSceneList = sceneRealData.childSceneNameList;
         for (int i = 0; i < childSceneList.Count; i++)
         {
-            string childSceneFullName = childSceneList[i].path + childSceneList[i].name;
-
             //! 檢查是否load過.
             if (checkLoad)
             {
-                Scene scene = SceneManager.GetSceneByName(childSceneFullName);
+                Scene scene = SceneManager.GetSceneByName(childSceneList[i]);
                 if (scene.IsValid())
                 {
                     continue;
@@ -201,16 +416,17 @@ public class LoadSceneMgr : MonoBehaviour
             }
 
             //! Load場景.
-            if (async)
+            if (sceneRealData.async)
             {
                 //SceneManager.LoadSceneAsync(childSceneFullName, LoadSceneMode.Additive);
-				StartCoroutine(LoadSceneAsync(childSceneFullName, LoadSceneMode.Additive));
-				
+                StartCoroutine(LoadSceneAsync(childSceneList[i], LoadSceneMode.Additive));
+
             }
             else
             {
-                SceneManager.LoadScene(childSceneFullName, LoadSceneMode.Additive);
+                SceneManager.LoadScene(childSceneList[i], LoadSceneMode.Additive);
             }
+
         }
     }
 
@@ -220,10 +436,31 @@ public class LoadSceneMgr : MonoBehaviour
     /// <returns></returns>
     public bool IsLoadSceneAsyncApproximatelyDone()
     {
+        Initialize();
+
+        if (asyncOP.Count == 0)
+        {
+            //! 避開若無緣無故使用LoadSceneAsyncStartAutoActive開啟isStartAsyncAutoActive = true;
+            //! 會造成update跑起來沒意義，浪費效能
+            //! 判斷沒有非同步載入時，將update的isStartAsyncAutoActive關閉
+            isStartAsyncAutoActive = false;
+            return false;
+        }
+
         bool alldone = true;
+
         for (int i = 0; i < asyncOP.Count; i++)
-        {           
-            alldone &= Mathf.Approximately(asyncOP[i].progress, 0.9f);
+        {
+            //! 多個判斷progress是否為1.0f，可以使非同步的卸載其他場景
+            //! 避開非同步載入變成同步載入bug，造成progress直接變成1.0f
+            if (asyncOP[i].progress != 1.0f)
+            {
+                alldone &= Mathf.Approximately(asyncOP[i].progress, 0.9f);
+            }
+            else
+            {
+                alldone &=true;
+            }
         }
 
         return alldone;
@@ -262,9 +499,10 @@ public class LoadSceneMgr : MonoBehaviour
     /// <summary>
     /// active 己載入的場景.
     /// </summary>
-    void LoadSceneAsyncActiveLoadedScene()
+    public void LoadSceneAsyncActiveLoadedScene()
     {
-                
+        Initialize();
+
         for (int i = 0; i < asyncOP.Count; i++)
         {
             asyncOP[i].allowSceneActivation = true; ;
@@ -276,7 +514,6 @@ public class LoadSceneMgr : MonoBehaviour
         {
             cm.tag = "Untagged";
         }
-
         StartCoroutine(LoadSceneAsyncUnloadAndSetActiveScene());
     }
     
@@ -307,13 +544,21 @@ public class LoadSceneMgr : MonoBehaviour
                 SceneManager.SetActiveScene(SceneManager.GetSceneAt(SceneManager.sceneCount - 1));
                 for (int i = 0; i < toBeUnloadScene.Count; i++)
                 {
-                    SceneManager.UnloadScene(toBeUnloadScene[i].buildIndex);
+                    SceneManager.UnloadScene(toBeUnloadScene[i].name);
                 }
-                 break;
+
+                //! 非同步場景卸載，不是用unity的LoadScene是自行卸載，
+                //! 所以自己Call Resources.UnloadUnusedAssets().
+                Resources.UnloadUnusedAssets();
+
+                break;
             }
             yield return null;
         }
 
+#if ASSETBUNDLE
+        UnloadSceneAssetbundle(false, false);
+#endif //! ASSETBUNDLE.
     }
 
 
@@ -343,6 +588,8 @@ public class LoadSceneMgr : MonoBehaviour
     /// <returns></returns>
     public T GetSceneRootComponenet<T>(string sceneName)
     {
+        Initialize();
+
         T t = default(T);
         Scene scene = SceneManager.GetSceneByName(sceneName);
         if (scene.IsValid())
@@ -369,6 +616,8 @@ public class LoadSceneMgr : MonoBehaviour
     /// <returns></returns>
     public GameObject GetSceneGameObjectByName(string sceneName, string goName)
     {
+        Initialize();
+
         Scene scene = SceneManager.GetSceneByName(sceneName);
         if (scene.IsValid())
         {
@@ -392,34 +641,66 @@ public class LoadSceneMgr : MonoBehaviour
     /// <param name="sceneName"></param>
     public void LoadChildScenesIfNotLoad(string sceneName)
     {
-        for (int i = 0; i < loadSceneDataList.Count; i++)
-        {
-            ScenePathData parentScene = loadSceneDataList[i].parentScene;
-            List<ScenePathData> childScenes = loadSceneDataList[i].childSceneList;
-            if (parentScene.name == sceneName)
-            {
-                LoadChildScene(childScenes, false, true);
-            }
-        }
-    }
+        //! Editor模式直接從特定場景開始跑，才需要.
+#if UNITY_EDITOR
 
-    
-    
-    /// <summary>
-    /// 
-    /// </summary>
-    void Awake()
-    {
+        Initialize();
+
+        if (IsLoadSceneRealDataExist(sceneName) == false)
+        {
+            LoadSceneRealData sceneRealData = GetLoadSceneRealData(sceneName, false, false);
+#if ASSETBUNDLE
+            //! 使用AssetBundle先載入AssetBundle.
+            LoadAssetBundleMgr.Singleton.SetDownloadDirectory(FileDirectory.GetStageAssetBundlePath());
+            List<string> loadSceneList = new List<string>();
+            for (int i = 0; i < sceneRealData.childSceneNameList.Count; i++)
+            {
+                string childSceneName = sceneRealData.childSceneNameList[i];
+                AssetbundleData assetbundleData = LoadAssetBundleMgr.Singleton.GetAssetbundleData(childSceneName);
+                //! 沒Load過就Load.
+                if (assetbundleData == null)
+                {
+                    LoadAssetBundleMgr.Singleton.LoadAssetbundle(childSceneName);
+                    loadSceneList.Add(childSceneName);
+                }
+            }
+
+            LoadChildScene(sceneRealData, true);
+
+            //! 場景Load完就unload assetbundle.
+            for (int i = 0; i < loadSceneList.Count; i++)
+            {
+                LoadAssetBundleMgr.Singleton.UnloadAssetbundle(loadSceneList[i]);
+            }
+
+#else
+            LoadChildScene(sceneRealData, true);
+#endif //! ASSETBUNDLE.
+
+            sceneRealData = null;
+        }
+#endif //! UNITY_EDITOR.
         
     }
 
-	/// <summary>
-	/// 
-	/// </summary>
-	void Start () 
+    /// <summary>
+    /// 使用idType字串取得Id.
+    /// </summary>
+    /// <param name="idType"></param>
+    /// <returns></returns>
+    int GetIdByIdType(string idType)
     {
-	
-	}
+        int id = 0;
+        if (idType == "suitId")
+        {
+            id = InfoMgr.Singleton.GetPlayerInfo().GetSuitId();
+        }
+
+        //! 之後有其他的寫在後面.
+
+        return id;
+    }
+    
 
     /// <summary>
     /// 多久後自動 active 異步載入的場景.
@@ -427,6 +708,8 @@ public class LoadSceneMgr : MonoBehaviour
     /// <param name="activetime"></param>
     public void LoadSceneAsyncStartAutoActive(float activetime)
     {
+        Initialize();
+
         isStartAsyncAutoActive = true;
         asyncAutoActiveTime = activetime;
         currentTime = 0;
@@ -436,16 +719,28 @@ public class LoadSceneMgr : MonoBehaviour
 	// Update is called once per frame
 	void Update ()
     {
+#if ASSETBUNDLE
+        for (int i = 0; i < loadSceneRealDataList.Count; i++)
+        {
+            LoadSceneFromAssetBundleAsync(loadSceneRealDataList[i]);
+        }
+#endif //! ASSETBUNDLE.
+
         if (isStartAsyncAutoActive)
         {
             currentTime += Time.deltaTime;
-
             if (IsLoadSceneAsyncApproximatelyDone() && currentTime >= asyncAutoActiveTime)
             {
                 isStartAsyncAutoActive = false;
                 LoadSceneAsyncActiveLoadedScene();
             }
-            
         }
-	}
+        //! 不使用下面code
+
+        ////! 每個frame重置count數，不讓同一個frame同時做同步與非同步的場景切換
+        //if(count != 0)
+        //{
+        //    count = 0;
+        //}
+    }
 }
